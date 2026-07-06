@@ -83,6 +83,8 @@ td.tname{font-size:13px;max-width:340px}
 </div>
 <div class="toast" id="toast">保存しました</div>
 
+<script src="firebase-config.js"></script>
+<script src="seed-data.js"></script>
 <script type="module">
 import { BLDGS, PHASES, DEPTS, STATUSES, PRIS, initErr, ensureSeed, subscribe, saveData, esc } from './app.js';
 let DATA=null, LOCAL=null, dirty=new Set(), fBldg="ALL";

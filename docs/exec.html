@@ -91,6 +91,8 @@ select.appr-sel{font-family:inherit;font-size:11px;border:1px solid var(--line);
   <div class="foot">経営ビューは閲覧が中心です。承認状態のみここで更新できます。工程の修正は実務ビューで行います。</div>
 </div>
 
+<script src="firebase-config.js"></script>
+<script src="seed-data.js"></script>
 <script type="module">
 import { APPRS, initErr, ensureSeed, subscribe, saveData, summarize, byBuilding, byDept, itemStats, pct, esc, BLDGS } from './app.js';
 let DATA=null, fBrand="ALL", fBldg="ALL";
