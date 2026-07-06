@@ -1,0 +1,43 @@
+=================================================================
+ 出店プロジェクト セットアップ用コマンド一覧（Mac / コピペ用）
+ 手順書 setup_guide.docx と対応。上から順に使ってください。
+=================================================================
+
+--- パート0：フォルダへ移動（デスクトップに osaki-pj を置いた場合）---
+cd ~/Desktop/osaki-pj
+ls
+
+--- パートA-2：道具の確認 / 導入 ---
+gh --version
+brew --version
+# ↓Homebrew未導入のときだけ実行（Macのパスワードを聞かれます）
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install gh
+
+--- パートA-3：GitHubログイン ---
+gh auth login
+gh auth status
+
+--- パートA-4：リポジトリ作成＆アップロード ---
+git init
+git add .
+git commit -m "初回アップロード"
+git branch -M main
+gh repo create osaki-pj --private --source=. --push
+# ↑社内限定。公開したいなら --private を --public に変更
+gh repo view --web
+
+--- パートC-1：設定ファイルを開く ---
+open -e docs/firebase-config.js
+
+--- パートC-3：鍵を貼ったあと反映 ---
+git add .
+git commit -m "firebaseの設定を追加"
+git push
+
+=================================================================
+ 以降の修正（見た目・項目を直したとき）は毎回この3つ：
+   git add .
+   git commit -m "修正内容メモ"
+   git push
+=================================================================

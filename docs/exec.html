@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>経営ビュー — 出店プロジェクト管制板</title>
+<style>
+:root{--ink:#14202e;--ink2:#31465c;--line:#c9d2dc;--line2:#e4e9ef;--paper:#eef1f4;--card:#fff;
+--blue:#2f5d8a;--done:#2f7d4f;--done-fill:#dcecdf;--prog:#c6871a;--prog-fill:#faefd4;
+--todo:#8a97a5;--todo-fill:#eef1f4;--alert:#b23b3b;--alert-fill:#f6e3e1;--mono:'SFMono-Regular',Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;background:var(--paper);color:var(--ink);line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 22px 60px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--ink);padding-bottom:13px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--ink2);text-transform:uppercase}
+h1{font-size:25px;font-weight:800;margin-top:3px}
+.top .meta{text-align:right;font-size:12px;color:var(--ink2);font-family:var(--mono)}
+.top .meta b{color:var(--ink)}
+.nav{margin:12px 0 20px;font-size:12px;font-family:var(--mono)}
+.nav a{color:var(--blue);text-decoration:none;margin-right:14px}
+.status-line{font-size:11px;font-family:var(--mono);color:var(--ink2);margin-bottom:18px}
+.dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--done);margin-right:5px;vertical-align:middle}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.chip{font-size:12px;padding:4px 11px;border:1px solid var(--line);background:var(--card);cursor:pointer;border-radius:2px;color:var(--ink2)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:24px}
+.kpi{background:var(--card);padding:15px 18px}
+.kpi .l{font-size:11px;font-family:var(--mono);color:var(--ink2)}
+.kpi .v{font-size:32px;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:11px;color:var(--ink2)}
+.kpi.alert .v{color:var(--alert)}
+.grid2{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;margin-bottom:24px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+h2{font-size:12px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);
+border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:13px}
+.bldg{background:var(--card);border:1px solid var(--line);padding:14px 15px;margin-bottom:10px;border-radius:2px}
+.bldg-hd{display:flex;justify-content:space-between;margin-bottom:8px}
+.bldg-name{font-weight:700;font-size:15px}.bldg-c{font-size:11px;font-family:var(--mono);color:var(--ink2)}
+.bar{display:flex;height:9px;border-radius:2px;overflow:hidden;background:var(--todo-fill);border:1px solid var(--line2)}
+.bar i{height:100%}.s-done{background:var(--done)}.s-prog{background:var(--prog)}
+.section{background:var(--card);border:1px solid var(--line);border-radius:2px;padding:16px 18px}
+.appr{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.appr:last-child{border-bottom:none}.appr .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:2px}
+.b-done{background:var(--done-fill);color:var(--done)}.b-prep{background:var(--prog-fill);color:var(--prog)}.b-wait{background:var(--alert-fill);color:var(--alert)}
+select.appr-sel{font-family:inherit;font-size:11px;border:1px solid var(--line);border-radius:2px;padding:2px 4px;background:#fff}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:10px;font-family:var(--mono);color:var(--ink2);padding:0 8px 6px;border-bottom:1px solid var(--line)}
+.tbl th.n,.tbl td.n{text-align:right;font-variant-numeric:tabular-nums}
+.tbl td{padding:7px 8px;border-bottom:1px solid var(--line2)}
+.mini{position:relative;height:6px;background:var(--todo-fill);border-radius:3px;width:64px;display:inline-block;vertical-align:middle}
+.mini i{position:absolute;left:0;top:0;height:100%;background:var(--done);border-radius:3px}
+.tk{display:grid;grid-template-columns:80px 92px 1fr 70px 82px;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.tk:last-child{border-bottom:none}.tk .ph{font-size:10px;font-family:var(--mono);color:var(--ink2)}
+.tk .bl{font-size:11px;color:var(--ink2)}.tk .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk .pe{font-size:12px;color:var(--ink2)}.four{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--prog);margin-left:5px}
+.st{font-size:11px;font-family:var(--mono);padding:3px 0;text-align:center;border-radius:2px}
+.st-done{background:var(--done-fill);color:var(--done)}.st-prog{background:var(--prog-fill);color:var(--prog)}.st-todo{background:var(--todo-fill);color:var(--todo)}
+.err{background:var(--alert-fill);border:1px solid var(--alert);color:var(--alert);padding:14px 16px;border-radius:3px;font-size:13px;margin-bottom:20px}
+.foot{margin-top:24px;font-size:11px;color:var(--todo);font-family:var(--mono);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><div class="eyebrow">Executive View — Control Board</div><h1>経営ビュー</h1></div>
+    <div class="meta">案件 <b>PJ-OSAKI-001</b><br>大崎モデルハウス<br>社長室・社長・役員</div>
+  </div>
+  <div class="nav"><a href="index.html">← 入口</a><a href="ops.html">実務ビューへ →</a></div>
+  <div id="err" class="err" style="display:none"></div>
+  <div class="status-line" id="statusline"><span class="dot-live"></span>接続中…</div>
+
+  <div class="filters" id="filters"></div>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid2">
+    <div><h2>建物区分別 進捗</h2><div id="buildings"></div></div>
+    <div><h2>社長承認ウォッチ（4点セット）</h2><div class="section" style="padding:6px 16px"><div id="approvals"></div></div></div>
+  </div>
+
+  <div class="grid2">
+    <div><h2>部門別 稼働</h2><div class="section"><table class="tbl"><thead><tr>
+      <th>部門</th><th class="n">担当</th><th class="n">進行中</th><th class="n">完了</th><th>完了率</th></tr></thead>
+      <tbody id="depts"></tbody></table></div></div>
+    <div><h2>備品・準備物</h2><div class="section" id="itemsBox"></div></div>
+  </div>
+
+  <h2 style="margin-top:24px">タスク一覧 <span id="tkCount" style="color:var(--todo)"></span></h2>
+  <div class="section"><div id="tasklist"></div></div>
+
+  <div class="foot">経営ビューは閲覧が中心です。承認状態のみここで更新できます。工程の修正は実務ビューで行います。</div>
+</div>
+
+<script type="module">
+import { APPRS, initErr, ensureSeed, subscribe, saveData, summarize, byBuilding, byDept, itemStats, pct, esc, BLDGS } from './app.js';
+let DATA=null, fBrand="ALL", fBldg="ALL";
+const $=id=>document.getElementById(id);
+if(initErr){ $("err").style.display="block"; $("err").textContent="⚠ "+initErr; $("statusline").style.display="none"; }
+else { ensureSeed().catch(e=>{$("err").style.display="block";$("err").textContent="⚠ "+e.message;});
+  subscribe(d=>{DATA=d;render();}, msg=>{$("err").style.display="block";$("err").textContent="⚠ "+msg;}); }
+
+function brands(){return [...new Set((DATA?.tasks||[]).map(t=>t.brand).filter(Boolean))];}
+function tasksF(){return (DATA?.tasks||[]).filter(t=>(fBrand==="ALL"||t.brand===fBrand)&&(fBldg==="ALL"||t.bldg===fBldg));}
+function chip(label,val,cur,cb){const b=document.createElement("button");b.className="chip"+(val===cur?" on":"");b.textContent=label;b.onclick=cb;return b;}
+function stKey(s){return s==="完了"?"done":s==="進行中"?"prog":"todo";}
+
+function render(){
+  if(!DATA)return;
+  $("statusline").innerHTML='<span class="dot-live"></span>ライブ接続中 ・ 最終更新 '+(DATA.meta?.updated? new Date(DATA.meta.updated).toLocaleString('ja-JP'):'—');
+  const f=$("filters");f.innerHTML="";
+  f.appendChild(chip("ブランド:すべて","ALL",fBrand,()=>{fBrand="ALL";render();}));
+  brands().forEach(b=>f.appendChild(chip(b,b,fBrand,()=>{fBrand=b;render();})));
+  BLDGS.forEach(b=>f.appendChild(chip(b,b,fBldg,()=>{fBldg=(fBldg===b?"ALL":b);render();})));
+
+  const T=tasksF(), s=summarize(T);
+  $("kpis").innerHTML=[
+    ["全タスク",s.total,"件",""],["完了率",s.rate+"%","("+s.done+"/"+s.total+")",""],
+    ["進行中",s.prog,"件",""],["社長承認 未完",s.apprLeft,"件 / 対象"+s.need4+"件",s.apprLeft>0?"alert":""]
+  ].map(k=>`<div class="kpi ${k[3]}"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="s">${k[2]}</div></div>`).join("");
+
+  $("buildings").innerHTML=byBuilding((DATA.tasks||[]).filter(t=>fBrand==="ALL"||t.brand===fBrand)).map(b=>`
+    <div class="bldg"><div class="bldg-hd"><div class="bldg-name">${esc(b.name)}</div>
+    <div class="bldg-c">${b.done}/${b.total} 完了・${b.rate}%</div></div>
+    <div class="bar"><i class="s-done" style="width:${b.total?b.done/b.total*100:0}%"></i><i class="s-prog" style="width:${b.total?b.prog/b.total*100:0}%"></i></div></div>`).join("");
+
+  const av=s.need4List.slice().sort((a,b)=>(a.appr==="社長承認済")-(b.appr==="社長承認済"));
+  $("approvals").innerHTML=av.length?av.map(t=>{
+    const cls=t.appr==="社長承認済"?"b-done":(t.appr==="準備中"||t.appr==="該当なし"?"b-prep":"b-wait");
+    const opts=APPRS.map(a=>`<option ${a===t.appr?"selected":""}>${a}</option>`).join("");
+    return `<div class="appr"><span class="n" title="${esc(t.task)}">${esc(t.task)}</span>
+      <select class="appr-sel" data-id="${esc(t.id)}">${opts}</select></div>`;
+  }).join(""):'<div style="padding:16px;color:var(--todo);font-family:var(--mono);font-size:12px">対象なし</div>';
+  document.querySelectorAll(".appr-sel").forEach(sel=>sel.onchange=async e=>{
+    const id=e.target.dataset.id; const t=DATA.tasks.find(x=>x.id===id); if(t){t.appr=e.target.value;
+      try{await saveData(DATA);}catch(err){alert(err.message);} }});
+
+  $("depts").innerHTML=byDept(T).map(d=>`<tr><td>${esc(d.name)}</td><td class="n">${d.total}</td>
+    <td class="n">${d.prog}</td><td class="n">${d.done}</td>
+    <td><span class="mini"><i style="width:${d.rate}%"></i></span> ${d.rate}%</td></tr>`).join("")
+    ||'<tr><td colspan="5" style="color:var(--todo)">該当なし</td></tr>';
+
+  const its=(DATA.items||[]).filter(i=>fBrand==="ALL"||i.brand===fBrand), ist=itemStats(its);
+  $("itemsBox").innerHTML=`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px">
+    <span>準備物 <b>${ist.total}</b> 件</span><span>完了 <b>${ist.done}</b> / 未 <b>${ist.todo}</b></span></div>
+    <div class="bar" style="height:11px"><i class="s-done" style="width:${pct(ist.done,ist.total)}%"></i></div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line2);display:flex;justify-content:space-between;align-items:baseline">
+    <span style="font-family:var(--mono);font-size:11px;color:var(--ink2)">想定金額合計</span>
+    <span style="font-size:22px;font-weight:800">¥${ist.amount.toLocaleString()}</span></div>`;
+
+  const order={"完了":2,"進行中":0,"未着手":1};
+  const sorted=T.slice().sort((a,b)=>(order[a.status]??3)-(order[b.status]??3));
+  $("tkCount").textContent=T.length+" 件";
+  $("tasklist").innerHTML=sorted.map(t=>`<div class="tk">
+    <span class="ph">${esc(t.phase||"—")}</span><span class="bl">${esc(t.bldg)}</span>
+    <span class="nm" title="${esc(t.task)}">${esc(t.task)}${t.need4==="要"?'<span class="four"></span>':""}</span>
+    <span class="pe">${esc(t.person||"—")}</span>
+    <span class="st st-${stKey(t.status)}">${esc(t.status)}</span></div>`).join("");
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>実務ビュー — 工程管理</title>
+<style>
+:root{--ink:#14202e;--ink2:#31465c;--line:#c9d2dc;--line2:#e4e9ef;--paper:#eef1f4;--card:#fff;
+--blue:#2f5d8a;--blue-fill:#dbe7f2;--done:#2f7d4f;--done-fill:#dcecdf;--prog:#c6871a;--prog-fill:#faefd4;
+--todo:#8a97a5;--todo-fill:#eef1f4;--alert:#b23b3b;--alert-fill:#f6e3e1;--mono:'SFMono-Regular',Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;background:var(--paper);color:var(--ink);line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding:26px 22px 90px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--blue);padding-bottom:13px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--blue);text-transform:uppercase}
+h1{font-size:25px;font-weight:800;margin-top:3px}
+.top .meta{text-align:right;font-size:12px;color:var(--ink2);font-family:var(--mono)}
+.nav{margin:12px 0 18px;font-size:12px;font-family:var(--mono)}
+.nav a{color:var(--blue);text-decoration:none;margin-right:14px}
+.status-line{font-size:11px;font-family:var(--mono);color:var(--ink2);margin-bottom:16px}
+.dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--done);margin-right:5px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.chip{font-size:12px;padding:4px 11px;border:1px solid var(--line);background:var(--card);cursor:pointer;border-radius:2px;color:var(--ink2)}
+.chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+input.search{font-family:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--line);border-radius:2px;min-width:180px}
+.hint{font-size:11px;color:var(--ink2);font-family:var(--mono);margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--line)}
+th{position:sticky;top:0;background:var(--ink);color:#fff;font-size:10px;font-family:var(--mono);letter-spacing:.05em;
+  font-weight:600;text-align:left;padding:9px 8px;z-index:2}
+td{padding:5px 8px;border-bottom:1px solid var(--line2);vertical-align:middle}
+tr:hover td{background:#f7f9fb}
+select,input.cell{font-family:inherit;font-size:12px;border:1px solid transparent;background:transparent;
+  border-radius:2px;padding:3px 4px;width:100%;color:var(--ink)}
+select:hover,input.cell:hover{border-color:var(--line)}
+select:focus,input.cell:focus{border-color:var(--blue);background:#fff;outline:none}
+td.tname{font-size:13px;max-width:340px}
+.ph{font-family:var(--mono);font-size:10px;color:var(--ink2)}
+.dirty{background:var(--prog-fill)!important}
+.st-done{color:var(--done);font-weight:700}.st-prog{color:var(--prog);font-weight:700}
+.four{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--prog);margin-left:5px}
+.savebar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);
+  padding:12px 22px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -3px 12px rgba(20,32,46,.06);z-index:10}
+.savebar .info{font-size:12px;color:var(--ink2);font-family:var(--mono)}
+.btn{font-family:inherit;font-size:13px;font-weight:700;padding:9px 22px;border:none;border-radius:3px;cursor:pointer}
+.btn-save{background:var(--blue);color:#fff}.btn-save:disabled{background:var(--todo);cursor:default}
+.btn-reset{background:transparent;color:var(--ink2);border:1px solid var(--line);margin-right:8px}
+.err{background:var(--alert-fill);border:1px solid var(--alert);color:var(--alert);padding:14px 16px;border-radius:3px;font-size:13px;margin-bottom:18px}
+.toast{position:fixed;top:20px;right:20px;background:var(--done);color:#fff;padding:11px 18px;border-radius:3px;
+  font-size:13px;font-weight:700;opacity:0;transition:.3s;z-index:20}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><div class="eyebrow">Operations View — 工程管理</div><h1>実務ビュー</h1></div>
+    <div class="meta">案件 PJ-OSAKI-001<br>大崎モデルハウス<br>実務者用</div>
+  </div>
+  <div class="nav"><a href="index.html">← 入口</a><a href="exec.html">経営ビューへ →</a></div>
+  <div id="err" class="err" style="display:none"></div>
+  <div class="status-line" id="statusline"><span class="dot-live"></span>接続中…</div>
+
+  <div class="controls" id="controls"></div>
+  <input class="search" id="search" placeholder="タスク名・担当者で検索…" oninput="window._render&&window._render()">
+  <div class="hint">セルを直接編集できます。編集すると行が色付きになります。下の「保存」を押すと全ビューに即反映されます。</div>
+
+  <div style="overflow-x:auto"><table>
+    <thead><tr>
+      <th style="width:70px">ID</th><th style="width:90px">建物</th><th style="width:110px">フェーズ</th>
+      <th>タスク</th><th style="width:90px">担当者</th><th style="width:90px">部門</th>
+      <th style="width:96px">ステータス</th><th style="width:70px">優先</th><th style="width:120px">期限</th><th style="width:110px">完了日</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+</div>
+
+<div class="savebar">
+  <span class="info" id="saveinfo">未編集</span>
+  <div>
+    <button class="btn btn-reset" id="resetBtn" onclick="window._reset&&window._reset()">変更を破棄</button>
+    <button class="btn btn-save" id="saveBtn" disabled onclick="window._save&&window._save()">保存する</button>
+  </div>
+</div>
+<div class="toast" id="toast">保存しました</div>
+
+<script type="module">
+import { BLDGS, PHASES, DEPTS, STATUSES, PRIS, initErr, ensureSeed, subscribe, saveData, esc } from './app.js';
+let DATA=null, LOCAL=null, dirty=new Set(), fBldg="ALL";
+const $=id=>document.getElementById(id);
+if(initErr){ $("err").style.display="block"; $("err").textContent="⚠ "+initErr; $("statusline").style.display="none"; }
+else { ensureSeed().catch(e=>{$("err").style.display="block";$("err").textContent="⚠ "+e.message;});
+  subscribe(d=>{ DATA=d;
+    if(dirty.size===0){ LOCAL=JSON.parse(JSON.stringify(d)); } // 編集中は上書きしない
+    render();
+    if(dirty.size>0){ $("saveinfo").innerHTML='<b style="color:var(--prog)">別の更新が届きました。</b> 保存すると自分の変更が優先されます。'; }
+  }, msg=>{$("err").style.display="block";$("err").textContent="⚠ "+msg;}); }
+
+const opts=(arr,cur)=>arr.map(a=>`<option ${a===cur?"selected":""}>${esc(a)}</option>`).join("");
+function chip(label,val,cur,cb){const b=document.createElement("button");b.className="chip"+(val===cur?" on":"");b.textContent=label;b.onclick=cb;return b;}
+function stCls(s){return s==="完了"?"st-done":s==="進行中"?"st-prog":"";}
+
+function render(){
+  if(!LOCAL)return;
+  $("statusline").innerHTML='<span class="dot-live"></span>ライブ接続中 ・ 最終更新 '+(DATA?.meta?.updated? new Date(DATA.meta.updated).toLocaleString('ja-JP'):'—');
+  const c=$("controls");c.innerHTML="";
+  c.appendChild(chip("建物:すべて","ALL",fBldg,()=>{fBldg="ALL";render();}));
+  BLDGS.forEach(b=>c.appendChild(chip(b,b,fBldg,()=>{fBldg=b;render();})));
+
+  const q=($("search").value||"").trim();
+  const rows=LOCAL.tasks.map((t,idx)=>({t,idx}))
+    .filter(({t})=>(fBldg==="ALL"||t.bldg===fBldg)&&(!q||(t.task+t.person).includes(q)));
+  $("rows").innerHTML=rows.map(({t,idx})=>`
+    <tr class="${dirty.has(idx)?'dirty':''}">
+      <td class="ph">${esc(t.id)}</td>
+      <td><select data-i="${idx}" data-k="bldg">${opts(BLDGS,t.bldg)}</select></td>
+      <td><select data-i="${idx}" data-k="phase">${opts([""].concat(PHASES),t.phase)}</select></td>
+      <td class="tname">${esc(t.task)}${t.need4==="要"?'<span class="four" title="4点セット対象"></span>':""}</td>
+      <td><input class="cell" data-i="${idx}" data-k="person" value="${esc(t.person)}"></td>
+      <td><select data-i="${idx}" data-k="dept">${opts([""].concat(DEPTS),t.dept)}</select></td>
+      <td class="${stCls(t.status)}"><select data-i="${idx}" data-k="status">${opts(STATUSES,t.status)}</select></td>
+      <td><select data-i="${idx}" data-k="pri">${opts(PRIS,t.pri)}</select></td>
+      <td><input class="cell" data-i="${idx}" data-k="deadline" value="${esc(t.deadline)}" placeholder="YYYY-MM-DD"></td>
+      <td><input class="cell" data-i="${idx}" data-k="done" value="${esc(t.done)}" placeholder="YYYY-MM-DD"></td>
+    </tr>`).join("");
+
+  $("rows").querySelectorAll("select,input.cell").forEach(el=>{
+    const h=e=>{const i=+e.target.dataset.i,k=e.target.dataset.k;LOCAL.tasks[i][k]=e.target.value;dirty.add(i);refreshSave();
+      if(k==="status"||k==="phase"||k==="bldg")render();};
+    el.addEventListener("change",h);
+  });
+  refreshSave();
+}
+function refreshSave(){
+  $("saveBtn").disabled=dirty.size===0;
+  $("saveinfo").textContent=dirty.size===0?"未編集":(dirty.size+" 件のタスクを編集中（未保存）");
+}
+window._render=render;
+window._reset=()=>{ if(dirty.size&&!confirm("編集内容を破棄して最新に戻します。よろしいですか？"))return;
+  dirty.clear();LOCAL=JSON.parse(JSON.stringify(DATA));render(); };
+window._save=async()=>{
+  try{
+    $("saveBtn").disabled=true;$("saveinfo").textContent="保存中…";
+    await saveData(LOCAL);
+    dirty.clear();
+    const t=$("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2000);
+    $("saveinfo").textContent="保存済み";
+  }catch(e){ $("err").style.display="block";$("err").textContent="⚠ 保存失敗: "+e.message; refreshSave(); }
+};
+</script>
+</body>
+</html>
